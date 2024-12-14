@@ -106,7 +106,7 @@
 
       // Redirect after 2 seconds with objectId and username
       setTimeout(() => {
-        window.location.href = `index.html?userId=${objectId}&username=${encodeURIComponent(username)}`;
+        window.location.href = `chat-page.html?userId=${objectId}&username=${encodeURIComponent(username)}`;
       }, 2000);
     }).catch(err => {
       console.error("Login failed:", err);
