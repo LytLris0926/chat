@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User HomePage</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <script type="text/javascript" src="js/Bmob-1.7.1.min.js"></script>
+
+  <style>
+    body {
+      background-color: #ffffff;
+      font-family: 'Roboto', sans-serif;
+      color: #333333;
+    }
+
+    .card {
+      margin-top: 50px;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      background-color: #f5f5f5;
+      position: relative;
+    }
+
+    .card-header {
+      background-color: #333333;
+      color: #ffffff;
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-align: center;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      padding: 15px;
+    }
+
+    .settings-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      cursor: pointer;
+      font-size: 1.5rem;
+      color: #ffffff;
+    }
+
+    .settings-icon:hover {
+      color: #cccccc;
+    }
+
+    .profile-photo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-photo img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #cccccc;
+    }
+
+    .username {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .user-info {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .chat-list {
+      margin-top: 5px; /* Further reduced space to bring chats closer */
+    }
+
+    .chat-item {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+    }
+
+    .chat-item:hover {
+      background-color: #f1f1f1;
+    }
+
+    .chat-item .name {
+      font-weight: bold;
+    }
+
+    .chat-item .last-message {
+      font-size: 0.9rem;
+      color: #777;
+    }
+
+    .chat-item .timestamp {
+      font-size: 0.8rem;
+      color: #888;
+      text-align: right;
+    }
+
+    .section-header {
+      font-size: 1.2rem;
+      margin-top: 0; /* No margin-top */
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .create-group-btn {
+      display: inline-block;
+      margin-left: 5px; /* Reduced margin to move button even closer */
+      padding: 0;
+      font-size: 1rem; /* Smaller font size for the button */
+      background-color: transparent;
+      color: #000000;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease-in-out;
+      box-shadow: none;
+    }
+
+    .create-group-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .create-group-btn i {
+      font-size: 1.2rem; /* Smaller icon size */
+    }
+
+    .create-group-btn:focus {
+      outline: none;
+    }
+
+    /* Modal Styling */
+    .modal-content {
+      border-radius: 15px;
+    }
+
+    .modal-header {
+      background-color: #333333;
+      color: white;
+    }
+
+    .modal-footer button {
+      background-color: #333333;
+      color: white;
+    }
+
+    /* Change the close button (X) to white */
+    .btn-close {
+      filter: invert(1);
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            User HomePage
+            <!-- Settings Icon -->
+            <div class="settings-icon" onclick="openSettings()">
+              <i class="bi bi-gear-fill"></i>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Profile Photo and Info -->
+            <div class="profile-photo">
+              <img src="https://via.placeholder.com/120" alt="User Photo" id="userPhoto">
+            </div>
+            <div class="user-info">
+              <div class="username" id="userName">John Doe</div> <!-- Username is now on top -->
+              <div id="userId">User ID: 12345</div>
+            </div>
+
+            <!-- Group Chats Section -->
+            <div class="chat-list">
+              <div class="section-header">Chats</div>
+              <!-- "Create Group" Plus Button -->
+              <button class="create-group-btn" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                <i class="bi bi-plus"></i>
+              </button>
+              <div id="chatItems"></div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Modal for Creating a Group -->
+  <!-- Bootstrap Modal for Creating a Group -->
+<!-- Bootstrap Modal for Creating a Group -->
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createGroupModalLabel">Create a New Group</h5>
+        <!-- Modal close icon -->
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" id="newGroupName" placeholder="Enter group name">
+      </div>
+      <div class="modal-footer">
+        <!-- Removed the "Close" button -->
+        <button type="button" class="btn btn-dark" onclick="createNewGroup()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Function to retrieve query parameter from the URL
+
+    // Assume that the Bmob query is already correctly set up
+
+// Fetch the data from Bmob
+    Bmob.initialize("5fae1458dd7d8bd4b498fe557bda8a01", "9e76c5623c742c04fe0481b025d1546f");
+
+    const query = Bmob.Query("chatRoom");
+    query.find().then((groups) => {
+      const chatItemsContainer = document.getElementById('chatItems');
+      chatItemsContainer.innerHTML = ''; // Clear any existing content
+
+      groups.forEach((group) => {
+        // Create a new div for each chat item
+        const chatItem = document.createElement('div');
+        chatItem.classList.add('chat-item');
+        chatItem.onclick = () => openChat(group.objectId, group.RoomName); // Handle chat click
+
+        // Create name div for each group
+        const name = document.createElement('div');
+        name.classList.add('name');
+        name.textContent = group.RoomName;
+
+        // Create last message div for each group
+        const lastMessage = document.createElement('div');
+        lastMessage.classList.add('last-message');
+        lastMessage.textContent = group.LastMessage || 'No messages yet'; // Handle if no last message exists
+
+        // Create timestamp div for each group
+        const timestamp = document.createElement('div');
+        timestamp.classList.add('timestamp');
+        timestamp.textContent = group.Timestamp || 'N/A'; // Handle if no timestamp exists
+
+        // Append the elements to the chat item
+        chatItem.appendChild(name);
+        chatItem.appendChild(lastMessage);
+        chatItem.appendChild(timestamp);
+
+        // Append the chat item to the chatItems container
+        chatItemsContainer.appendChild(chatItem);
+      });
+    }).catch((error) => {
+      console.error('Error fetching chat groups:', error);
+    });
+
+    // Function to handle opening a chat
+    function openChat(groupId, groupName) {
+      console.log(`Opening chat for group: ${groupName} (ID: ${groupId})`);
+      // You can add the logic to open the chat window for the specific group
+    }
+
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    // Extract userId and username from the URL
+    const userId = getQueryParam('userId');
+    const username = getQueryParam('username');
+
+    const user = {
+      photo: 'https://via.placeholder.com/120',
+      name: username,
+      id: userId
+    };
+
+    document.getElementById('userPhoto').src = user.photo;
+    document.getElementById('userName').textContent = user.name;
+    document.getElementById('userId').textContent = 'User ID: ' + user.id;
+
+    // Function to navigate to profile settings
+    function openSettings() {
+      window.location.href = `profile-page.html?userId=${userId}&username=${username}`;
+    }
+
+    // Function to open chat page for a specific group
+    function openChat(groupId, groupName) {
+      window.location.href = `chat-page.html?groupId=${groupId}&groupName=${groupName}&userId=${userId}&username=${username}`;
+    }
+
+    // Function to create a new chat group
+    function createNewGroup() {
+      const groupName = document.getElementById('newGroupName').value;
+      if (groupName) {
+        const newGroupId = groupName.toLowerCase().replace(/\s+/g, '');
+        const newGroupItem = `
+          <div class="chat-item" onclick="openChat('${newGroupId}', '${groupName}')">
+            <div class="name">${groupName}</div>
+            <div class="last-message">New group created!</div>
+            <div class="timestamp">Just now</div>
+          </div>
+        `;
+        document.getElementById('chatItems').insertAdjacentHTML('beforeend', newGroupItem);
+        // Close the modal after creation
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createGroupModal'));
+        modal.hide();
+      }
+
+      const query = Bmob.Query("chatRoom");
+      query.set("RoomName", groupName); // Current user's username
+      query.set("RoomHost", userId); // Message content
+
+      query.save().then((res) => {
+        console.log("chatRoom created:", res);
+        document.getElementById("newGroupName").value = ""; // Clear input field
+
+      }).catch((err) => {
+        console.error("Error creating chatRoom:", err);
+      });
+    }
+  </script>
+</body>
+</html>

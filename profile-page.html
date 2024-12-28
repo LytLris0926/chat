@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Page</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <script type="text/javascript" src="js/Bmob-1.7.1.min.js"></script>
+  <style>
+    body {
+      background-color: #ffffff;
+      font-family: 'Roboto', sans-serif;
+      color: #333333;
+    }
+
+    .card {
+      margin-top: 50px;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      background-color: #f5f5f5;
+    }
+
+    .card-header {
+      background-color: #333333;
+      color: #ffffff;
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-align: center;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+      padding: 15px;
+      position: relative;
+    }
+
+    .form-control {
+      border-radius: 30px;
+      padding: 12px 20px;
+      border: 1px solid #cccccc;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+      color: #333333;
+    }
+
+    .btn {
+      border-radius: 30px;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      background-color: #333333;
+      color: #ffffff;
+      border: none;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background-color: #444444;
+    }
+
+    .profile-photo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-photo img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #cccccc;
+    }
+
+    .profile-photo input {
+      margin-top: 10px;
+    }
+
+    .back-button {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: #ffffff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    .back-button:hover {
+      color: #ddd;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+  <!-- Back Button positioned at the top left corner -->
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <button class="back-button" onclick="goBackToHome()">
+              <i class="fas fa-arrow-left"></i> <!-- Back Arrow Icon -->
+          </button>
+          Profile Page
+        </div>
+        <div class="card-body">
+          <form>
+            <!-- Profile Photo -->
+            <div class="profile-photo">
+              <img id="profilePhotoPreview" src="https://via.placeholder.com/120" alt="Profile Photo">
+              <input type="file" id="profilePhoto" accept="image/*" class="form-control">
+            </div>
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" placeholder="Enter your username">
+            </div>
+
+            <!-- Gender -->
+            <div class="mb-3">
+              <label for="gender" class="form-label">Gender</label>
+              <select class="form-control" id="gender">
+                <option value="">Select your gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <!-- Birthdate -->
+            <div class="mb-3">
+              <label for="birthdate" class="form-label">Birthdate</label>
+              <input type="date" class="form-control" id="birthdate">
+            </div>
+
+            <!-- About -->
+            <div class="mb-3">
+              <label for="about" class="form-label">About</label>
+              <textarea class="form-control" id="about" rows="3" placeholder="Tell us about yourself"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" class="btn" onclick="saveProfile()">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- JavaScript to handle form submission -->
+  <script>
+
+    Bmob.initialize("5fae1458dd7d8bd4b498fe557bda8a01", "9e76c5623c742c04fe0481b025d1546f");
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    // Extract userId from the URL
+    const userId = getQueryParam('userId');
+    const username = getQueryParam('username');
+
+    function goBackToHome() {
+      // Redirect to home page with the userId as a query parameter
+      window.location.href = `home-page.html?userId=${userId}&username=${username}`;
+    }
+
+    let pfile
+    document.getElementById('profilePhoto').addEventListener('change', function (event) {
+      pfile = event.target.files[0];
+
+      if (pfile) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById('profilePhotoPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(pfile);
+      }
+    });
+
+    
+    var saveProfile = function() {
+      // profile photo file upload waiting for fix!!!
+      // console.log(pfile.name);
+      // // console.log(file);
+      // var file = Bmob.File(pfile.name, pfile);
+
+      // // console.log(bfile.get('filename'));
+      // console.log(file)
+      // file.save().then(res => {
+      //   console.log(res.length);
+      //   console.log(res);
+
+        
+      // }).catch(err => {
+      //   console.log(err)
+      // })
+
+     
+
+      // Get the values of the fields
+      const gender = document.getElementById('gender').value;
+      const birthdate = document.getElementById('birthdate').value;
+      const about = document.getElementById('about').value;
+
+      // Log the values to the console
+      console.log('Gender:', gender);
+      console.log('Birthdate:', birthdate);
+      console.log('About:', about);
+
+      const query = Bmob.Query('userProfile');
+      query.set("userId",userId)
+      query.set("gender",gender)
+      query.set("birthdate",birthdate)
+      query.set("about",about)
+
+      query.save().then(res => {
+        console.log(res)
+      }).catch(err => {
+        console.log(err)
+      })
+      
+
+    }
+  </script>
+</body>
+</html>
