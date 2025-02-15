@@ -246,6 +246,30 @@
       transform: translateY(-2px); /* Slight elevation effect */
     }
 
+    .fade-out {
+      animation: fadeOut 0.8s ease-in-out forwards;
+    }
+
+    @keyframes fadeOut {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+        background-color: #f0f0f0; /* Soft neutral color during fade */
+      }
+      100% {
+        opacity: 0;
+        background-color: #ffffff;
+      }
+    }
+
+
+    .fas.fa-times-circle:hover {
+      color: #ff1a1a; /* Darker red on hover */
+      transform: scale(1.2); /* Slight zoom on hover */
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
 
 
   </style>
@@ -264,6 +288,16 @@
     </div>
   </div>
 
+<!-- Room Members Modal -->
+<!-- Room Members Modal -->
+  <div id="roomMembersModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeRoomMembersModal()">&times;</span>
+      <h4 class="modal-title">Room Members</h4>
+      <ul class="group-list" id="roomMembersList"></ul>
+    </div>
+  </div>
+
 
   <div class="container">
     <div class="row justify-content-center">
@@ -271,17 +305,27 @@
         <div class="card chat-card">
 
             <div class="card-header d-flex align-items-center" style="position: relative;">
+
+              <i class="fa-solid fa-chevron-left" 
+             style="cursor: pointer; font-size: 1.5rem; margin-right: 10px;" 
+             onclick="goToHomePage()" 
+             title="Back to Home"></i>
               <div class="d-flex align-items-center">
                 <img src="images/chatLogo.jpg" alt="Profile" class="profile-img"> <!-- Profile image -->
                 <div class="name" id="groupName">Group Chat</div>
               </div>
-              <i class="fas fa-users" 
+              <div id="roomHostIcon" style="display: none;">
+                <i class="fas fa-user-friends" 
+                   style="cursor: pointer; font-size: 1.5rem; position: absolute; right: 50px; top: 50%; transform: translateY(-50%);"
+                   onclick="showRoomMembers()"
+                   title="Show Room Members"></i>
+              </div>
+
+              <i class="fas fa-solid fa-layer-group"
                  style="cursor: pointer; font-size: 1.5rem; position: absolute; right: 15px; top: 50%; transform: translateY(-50%);" 
                  onclick="showGroups()" 
                  title="Other Groups"></i>
             </div>
-
-
 
           <div class="card-body">
             <!-- Chat Window -->
@@ -312,6 +356,7 @@
     refreshChatWindow(); // Load the initial chat messages
   });
 
+  var memberIds = [];
 
   Bmob.initialize("5fae1458dd7d8bd4b498fe557bda8a01", "9e76c5623c742c04fe0481b025d1546f");
 
@@ -320,6 +365,8 @@
   const username = params.get("username");
   const groupName = params.get("groupName");
   const groupId = params.get("groupId");
+
+  fetchUserPhoto()
 
   document.getElementById("groupName").textContent = groupName;
 
@@ -332,8 +379,10 @@
     if (messageInput === "") return; // Prevent empty messages
 
     const query = Bmob.Query("chatMessage");
-    query.set("name", username); // Current user's username
-    query.set("message", messageInput); // Message content
+    query.set("name", username);
+    query.set("fromUserId", userId); // Current user's username
+    query.set("message", messageInput);
+    query.set("groupId", groupId); // Message content
     query.save().then((res) => {
       console.log("Message sent:", res);
       document.getElementById("messageInput").value = ""; // Clear input field
@@ -343,9 +392,22 @@
     });
   };
 
+    document.getElementById("messageInput").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      sending();
+    }
+  });
+
+
+  function goToHomePage() {
+    window.location.href = `home-page.html?userId=${userId}&username=${username}`; // Change "index.html" to your homepage URL
+  }
+
 
   var view = function () {
     const query = Bmob.Query("chatMessage");
+    query.equalTo("groupId", "==", groupId);
 
     query.find().then(res => {
       console.log(res);
@@ -357,9 +419,42 @@
 
   function refreshChatWindow() {
     const query = Bmob.Query("chatMessage");
+    query.equalTo("groupId", "==", groupId);
 
     query.find().then((res) => {
-      displayMessages(res); // Update the chat window with the latest messages
+
+      var lastMessage = res[res.length - 1];
+      displayMessages(res); 
+      const q = Bmob.Query("groupCheckTime");
+
+      q.equalTo("userId", "==", userId);
+
+      q.find().then(checkTimes => {
+
+        if (checkTimes.length > 0){
+          const qupdate = Bmob.Query('groupCheckTime');
+          qupdate.get(checkTimes[0].objectId).then(res => {
+            console.log(res)
+            res.set("lastMessageId", lastMessage.objectId)
+            res.set("groupId", groupId);
+            res.set("userId", userId);
+            res.save()
+          }).catch(err => {
+            console.log(err)
+          })
+        }else{
+          const qcreate = Bmob.Query('groupCheckTime');
+          res.set("lastMessageId", lastMessage.objectId)
+          qcreate.set("groupId", groupId);
+          qcreate.set("userId", userId);
+
+          qcreate.save()
+        }
+        
+
+      }).catch(err => {
+        console.log(err)
+      }) 
     }).catch((err) => {
       console.error("Error refreshing chat:", err);
     });
@@ -369,8 +464,195 @@
   setInterval(refreshChatWindow, 3000); // Refresh every 3 seconds
 
 
-  function displayMessages(messages) {
+  // function displayMessages(messages) {
+  //   const chatWindow = document.getElementById("chatWindow");
+  //   const currentMessagesCount = chatWindow.children.length;
+
+  //   chatWindow.innerHTML = ""; // Clear existing messages
+
+  //   messages.forEach((message) => {
+  //     const messageDiv = document.createElement("div");
+  //     messageDiv.className = `chat-message ${
+  //       message.name === username ? "me" : "them"
+  //     }`;
+
+  //     // Add sender's name
+  //     const senderSpan = document.createElement("span");
+  //     senderSpan.className = "sender";
+  //     senderSpan.textContent = message.name;
+
+  //     // Add message bubble
+  //     const bubbleDiv = document.createElement("div");
+  //     bubbleDiv.className = "message-bubble";
+  //     bubbleDiv.textContent = message.message;
+
+  //     // Add timestamp
+  //     const timestampSpan = document.createElement("span");
+  //     timestampSpan.className = "timestamp";
+  //     if (message.createdAt) {
+  //       const date = new Date(message.createdAt);
+  //       timestampSpan.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  //     }
+
+  //     messageDiv.appendChild(senderSpan);
+  //     messageDiv.appendChild(bubbleDiv);
+  //     if (message.createdAt) messageDiv.appendChild(timestampSpan);
+
+  //     chatWindow.appendChild(messageDiv);
+  //   });
+
+  //   // Scroll to bottom only if new messages are added
+  //   if (messages.length > currentMessagesCount) {
+  //     chatWindow.scrollTop = chatWindow.scrollHeight;
+  //   }
+  // }
+
+  // // Fetch chat list on page load
+  // document.addEventListener('DOMContentLoaded', function () {
+  //   console.log("Page loaded, fetching chat messages...");
+  //   view(); // Fetch and display chat messages
+  // });
+
+
+  // Show group list in a modal
+  function showGroups() {
+    const modal = document.getElementById('groupModal');
+    modal.style.display = 'block';
+
+
+    const query = Bmob.Query("chatRoom");
+    query.containedIn("RoomMember", [userId]);
+    query.find().then((groups) => {
+      const groupList = document.getElementById("groupList");
+      groupList.innerHTML = "";
+      console.log(groups);
+
+      groups.forEach((group) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = group.RoomName;
+        listItem.onclick = () => switchGroup(group.objectId, group.RoomName);
+        groupList.appendChild(listItem);
+      });
+
+    })
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('groupModal');
+    modal.style.display = 'none';
+  }
+
+  // Close the modal when clicking outside of it
+  window.onclick = function(event) {
+    const modal = document.getElementById('groupModal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+
+
+  function switchGroup(groupId, roomName) {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("userId");
+    const username = params.get("username");
+
+    // Clear existing search parameters
+    url.search = '';
+
+    // Construct the new URL with updated query parameters
+    const newUrl = 
+      url.toString() +
+      '?groupId=' + groupId +
+      '&groupName=' + encodeURIComponent(roomName) +
+      '&userId=' + userId +
+      '&username=' + username;
+
+    document.getElementById("chatWindow")
+    chatWindow.innerHTML = ""; // Clear existing messages
+    // Add the fade-out class for transition
+    document.body.classList.add('fade-out');
+
+
+
+    // Redirect after the animation ends
+    setTimeout(() => {
+      window.location.href = newUrl;
+    }, 800); // Match the duration of the fade-out animation
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    checkRoomHost();
+  });
+
+  function checkRoomHost() {
+    const query = Bmob.Query("chatRoom");
+    query.get(groupId).then((room) => {
+      if (room.RoomHost === userId) { // Check if current user is the host
+        document.getElementById("roomHostIcon").style.display = "block"; // Show the icon
+      }
+    }).catch((err) => {
+      console.error("Error checking room host:", err);
+    });
+  }
+
+
+  function showRoomMembers() {
+    const modal = document.getElementById('roomMembersModal');
+    modal.style.display = 'block';
+
+    const query = Bmob.Query("chatRoom");
+    query.get(groupId).then((room) => {
+      memberIds = room.RoomMember || []; // Array of member IDs
+      fetchMembers(memberIds);
+
+    }).catch((err) => {
+      console.error("Error fetching room members:", err);
+    });
+  }
+
+  function fetchMembers(memberIds) {
+    const userQuery = Bmob.Query("_User"); // Query the User table
+    userQuery.containedIn("objectId", memberIds);
+    userQuery.order("username"); // Order by username
+    userQuery.find().then((members) => {
+      this.roomMembers = members;
+      console.log(this.roomMembers);
+      displayRoomMembers(members);
+    }).catch((err) => {
+      console.error("Error fetching user data:", err);
+    });
+  }
+
+  function displayMessages(messages, groupId) {
+    const query = Bmob.Query("chatMessage");
+    query.equalTo("groupId", "==", groupId);
+
+    query.find().then((res) => {
+
+      var lastMessage = res[res.length - 1];
+      displayMessages(res); 
+      const q = Bmob.Query("groupCheckTime");
+
+      q.equalTo("userId", "==", userId);
+      q.equalTo("groupId", "==", groupId);
+
+      q.find().then(checkTimes => {
+        const qupdate = Bmob.Query('groupCheckTime');
+        qupdate.get(checkTimes[0].objectId).then(res => {
+          console.log(res)
+          res.set("lastMessageId", lastMessage.objectId)
+          res.save()
+        }).catch(err => {
+          console.log(err)
+        })
+
+      })
+    })
+
+
     const chatWindow = document.getElementById("chatWindow");
+
     const currentMessagesCount = chatWindow.children.length;
 
     chatWindow.innerHTML = ""; // Clear existing messages
@@ -380,6 +662,8 @@
       messageDiv.className = `chat-message ${
         message.name === username ? "me" : "them"
       }`;
+
+      // Create a container for the profile photo and messag
 
       // Add sender's name
       const senderSpan = document.createElement("span");
@@ -399,78 +683,147 @@
         timestampSpan.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
       }
 
-      messageDiv.appendChild(senderSpan);
-      messageDiv.appendChild(bubbleDiv);
-      if (message.createdAt) messageDiv.appendChild(timestampSpan);
+      const containerDiv = document.createElement("div");
+      containerDiv.style.display = "flex";
+      containerDiv.style.alignItems = "center";
+      containerDiv.style.marginBottom = "10px";
+
+      
+      if (message.createdAt) messageDiv.appendChild(timestampSpan); // Add timestamp
 
       chatWindow.appendChild(messageDiv);
+
+      // Add profile photo
+      const profileImg = document.createElement("img");
+      profileImg.alt = `${message.name}'s profile photo`;
+      profileImg.className = "profile-img";
+      profileImg.style.width = "40px";
+      profileImg.style.height = "40px";
+      profileImg.style.borderRadius = "50%";
+      profileImg.style.marginRight = "10px";
+
+
+      // Append elements
+      containerDiv.appendChild(profileImg); // Add profile image
+      containerDiv.appendChild(senderSpan); // Add sender's name
+      messageDiv.appendChild(containerDiv);
+      messageDiv.appendChild(bubbleDiv); // Add message bubble
+
+      if (profiles.length > 0){
+          profiles.forEach( profile => {
+              if (profile.userId == message.fromUserId) {
+                profileImg.src = "./profile_images/" + profile.photoName;   
+              }  
+          }) 
+      }else {
+          profileImg.src = "./profile_images/0.jpg" ;   
+      }
+       
     });
 
     // Scroll to bottom only if new messages are added
     if (messages.length > currentMessagesCount) {
       chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
+    } 
+
   }
 
-  // Fetch chat list on page load
-  document.addEventListener('DOMContentLoaded', function () {
-    console.log("Page loaded, fetching chat messages...");
-    view(); // Fetch and display chat messages
-  });
-
-
-  // Show group list in a modal
-  function showGroups() {
-    const modal = document.getElementById('groupModal');
-    modal.style.display = 'block';
+  var profiles = [];
+  
+  function fetchUserPhoto(){
 
     const query = Bmob.Query("chatRoom");
-    query.find().then((groups) => {
-      const groupList = document.getElementById("groupList");
-      groupList.innerHTML = "";
+    query.get(groupId).then((room) => {
+      
+      memberIds = room.RoomMember || []; // Array of member IDs
 
-      groups.forEach((group) => {
-        const listItem = document.createElement("li");
-        listItem.textContent = group.RoomName;
-        listItem.onclick = () => switchGroup(group.objectId);
-        groupList.appendChild(listItem);
+      let qp = Bmob.Query("userProfile");
+
+      qp.containedIn("userId", memberIds);
+
+      qp.find().then( ups => {
+        console.log(ups);
+        this.profiles = ups;
+
+      }).catch((error) => {
+        console.error('Error fetching chat groups:', error);
       });
 
-    })
-
-    // // Simulating a list of available groups
-    // const groups = ['Group 1', 'Group 2', 'Group 3', 'Group 4', 'Group 5'];
-    // const groupList = document.getElementById('groupList');
-    // groupList.innerHTML = ''; // Clear existing list
-
-    // groups.forEach(group => {
-    //   const listItem = document.createElement('li');
-    //   listItem.textContent = group;
-    //   listItem.onclick = () => alert(`You selected ${group}`); // Add click functionality
-    //   groupList.appendChild(listItem);
-    // });
+    }).catch((err) => {
+      console.error("Error fetching room members:", err);
+    });
   }
 
-  function closeModal() {
-    const modal = document.getElementById('groupModal');
+
+  function displayRoomMembers(members) {
+    const membersList = document.getElementById("roomMembersList");
+    membersList.innerHTML = ""; // Clear existing members
+
+    members.forEach((member) => {
+      const listItem = document.createElement("li");
+      listItem.style.display = "flex";
+      listItem.style.justifyContent = "space-between";
+      listItem.style.alignItems = "center";
+      listItem.style.padding = "5px 10px";
+      listItem.style.border = "1px solid #e0e0e0";
+      listItem.style.borderRadius = "10px";
+      listItem.style.marginBottom = "5px";
+      listItem.style.backgroundColor = "#f9f9f9";
+
+      // Member name
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = member.username;
+      nameSpan.style.flexGrow = "1";
+      nameSpan.style.fontSize = "1rem";
+      nameSpan.style.color = "#333";
+
+      // Remove icon
+      const removeIcon = document.createElement("i");
+      removeIcon.className = "fas fa-times-circle";
+      removeIcon.style.cursor = "pointer";
+      removeIcon.style.color = "#ff4d4d";
+      removeIcon.style.fontSize = "1.2rem";
+      removeIcon.style.marginLeft = "10px";
+      removeIcon.title = `Remove ${member.username}`;
+      removeIcon.onclick = () => removeMember(member.objectId);
+
+      listItem.appendChild(nameSpan);
+      listItem.appendChild(removeIcon);
+      membersList.appendChild(listItem);
+    });
+  }
+
+
+  function removeMember(memberId) {
+    if (!confirm("Are you sure you want to remove this member?")) return;
+
+    const query = Bmob.Query("chatRoom");
+    query.get(groupId).then((room) => {
+      const updatedMembers = room.RoomMember.filter((id) => id !== memberId); // Remove the member
+      room.set("RoomMember", updatedMembers);
+      return room.save(); // Save updated member list
+    }).then(() => {
+      alert("Member removed successfully.");
+      showRoomMembers(); // Refresh the list
+    }).catch((err) => {
+      console.error("Error removing member:", err);
+    });
+  }
+
+  function closeRoomMembersModal() {
+    const modal = document.getElementById('roomMembersModal');
     modal.style.display = 'none';
   }
 
   // Close the modal when clicking outside of it
   window.onclick = function(event) {
-    const modal = document.getElementById('groupModal');
+    const modal = document.getElementById('roomMembersModal');
     if (event.target === modal) {
-      modal.style.display = 'none';
+      closeRoomMembersModal();
     }
   };
 
-  // Switch to a different group
-  function switchGroup(groupId) {
-    currentGroupId = groupId;
-    loadMessages();
-    closeModal();
-  }
+
 
 </script>
-  
 </html> 

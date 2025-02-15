@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!-- <!-- <!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -97,6 +97,26 @@
   </style>
 </head>
 <body>
+  <!-- Image Selection Modal -->
+  <div class="modal fade" id="imageSelectionModal" tabindex="-1" aria-labelledby="imageSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="imageSelectionModalLabel">Select Profile Photo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="imageGallery" class="d-flex flex-wrap justify-content-start">
+            <!-- Images will be dynamically loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
   <!-- Back Button positioned at the top left corner -->
   <div class="row justify-content-center">
@@ -111,15 +131,19 @@
         <div class="card-body">
           <form>
             <!-- Profile Photo -->
+            <!-- Profile Photo -->
             <div class="profile-photo">
               <img id="profilePhotoPreview" src="https://via.placeholder.com/120" alt="Profile Photo">
-              <input type="file" id="profilePhoto" accept="image/*" class="form-control">
+              <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#imageSelectionModal">
+                Choose Profile Photo
+              </button>
             </div>
+
 
             <!-- Username -->
             <div class="mb-3">
               <label for="username" class="form-label">Username</label>
-              <input type="text" class="form-control" id="username" placeholder="Enter your username">
+              <h2 id="username" > </h2>
             </div>
 
             <!-- Gender -->
@@ -169,68 +193,144 @@
     const userId = getQueryParam('userId');
     const username = getQueryParam('username');
 
+    document.getElementById('username').innerHTML = username || '';
+
     function goBackToHome() {
       // Redirect to home page with the userId as a query parameter
       window.location.href = `home-page.html?userId=${userId}&username=${username}`;
     }
 
-    let pfile
-    document.getElementById('profilePhoto').addEventListener('change', function (event) {
-      pfile = event.target.files[0];
+    document.addEventListener("DOMContentLoaded", function () {
 
-      if (pfile) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          document.getElementById('profilePhotoPreview').src = e.target.result;
-        };
-        reader.readAsDataURL(pfile);
-      }
+      // Fetch profile data
+      const query = Bmob.Query('userProfile');
+      query.equalTo("userId", "==", userId);
+
+      query.find().then(profiles => {
+        if (profiles.length > 0) {
+          const profile = profiles[0];
+
+          // Populate the form fields
+          
+          document.getElementById('gender').value = profile.gender || '';
+          document.getElementById('birthdate').value = profile.birthdate || '';
+          document.getElementById('about').value = profile.about || '';
+
+          console.log(profile);
+          // Update profile photo
+          const profilePhotoPreview = document.getElementById('profilePhotoPreview');
+          if (profile.photoName) {
+            profilePhotoPreview.src = `profile_images/${profile.photoName}`;
+          } else {
+            profilePhotoPreview.src = 'https://via.placeholder.com/120'; // Default photo
+          }
+
+          // document.getElementById('profilePhotoPreview').src = img.src;
+
+        } else {
+          console.log("No profile data found for this user.");
+        }
+      }).catch(err => console.error("Error fetching profile data:", err));
     });
+
 
     
     var saveProfile = function() {
-      // profile photo file upload waiting for fix!!!
-      // console.log(pfile.name);
-      // // console.log(file);
-      // var file = Bmob.File(pfile.name, pfile);
+    // Get the selected photo name from sessionStorage
+      const photoName = sessionStorage.getItem('selectedPhotoName') || 'default.png'; // Default if no photo selected
 
-      // // console.log(bfile.get('filename'));
-      // console.log(file)
-      // file.save().then(res => {
-      //   console.log(res.length);
-      //   console.log(res);
-
-        
-      // }).catch(err => {
-      //   console.log(err)
-      // })
-
-     
-
-      // Get the values of the fields
+      console.log(photoName);
+      
+      // Get other form values
       const gender = document.getElementById('gender').value;
       const birthdate = document.getElementById('birthdate').value;
       const about = document.getElementById('about').value;
 
-      // Log the values to the console
+
+      // Log the values to the console (optional)
       console.log('Gender:', gender);
       console.log('Birthdate:', birthdate);
       console.log('About:', about);
+      console.log('Selected Photo Name:', photoName);
 
+      // Save to Bmob
       const query = Bmob.Query('userProfile');
-      query.set("userId",userId)
-      query.set("gender",gender)
-      query.set("birthdate",birthdate)
-      query.set("about",about)
 
-      query.save().then(res => {
-        console.log(res)
+      query.equalTo("userId", "==", userId);
+
+
+      query.find().then(profiles => {
+
+        if (profiles.length > 0){
+          const qupdate = Bmob.Query('userProfile');
+          qupdate.get(profiles[0].objectId).then(res => {
+            console.log(res)
+
+            res.set("gender", gender);
+            res.set("birthdate", birthdate);
+            res.set("about", about);
+            res.set("photoName", photoName);
+            res.save()
+          }).catch(err => {
+            console.log(err)
+          })
+        }else{
+          const qcreate = Bmob.Query('userProfile');
+          qcreate.set("userId", userId);
+          qcreate.set("gender", gender);
+          qcreate.set("birthdate", birthdate);
+          qcreate.set("about", about);
+          qcreate.set("photoName", photoName);
+
+          qcreate.save()
+        }
+        
+
       }).catch(err => {
         console.log(err)
-      })
-      
+      }) 
+    }// Set the photo name
 
+
+
+
+    let links = []
+
+    for (var i = 1; i <= 30; i++) {
+      links.push(i + ".png");
     }
+
+    console.log(links);
+    document.addEventListener("DOMContentLoaded", function () {
+      const imageGallery = document.getElementById("imageGallery");
+
+      links.forEach(link => {
+        const img = document.createElement('img');
+
+        img.src = `profile_images/${link}`;
+        img.className = 'img-thumbnail m-2';
+        img.style.width = '100px';
+        img.style.cursor = 'pointer';
+
+        img.onclick = function () {
+          // Update profile photo preview
+          document.getElementById('profilePhotoPreview').src = img.src;
+
+          // Extract and store the selected photo's filename
+          const photoName = img.src.split('/').pop(); // Get the filename
+          sessionStorage.setItem('selectedPhotoName', photoName); // Save it temporarily
+
+          // Close the modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById('imageSelectionModal'));
+          modal.hide();
+        };
+
+        imageGallery.appendChild(img);
+      });
+    });
+
+  
+
   </script>
 </body>
 </html>
